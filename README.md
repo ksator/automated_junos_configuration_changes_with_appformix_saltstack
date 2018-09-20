@@ -910,11 +910,11 @@ setup
 
 You can do it from the Appformix GUI, Alarms, add rule.  
 Then, as example:   
-Name: in_unicast_packets_core-rtr-p-02,  
+Name: in_unicast_packets_dc-vmx-1,  
 Module: Alarms,  
 Alarm rule type: Static,  
 scope: network devices,  
-network device/Aggregate: core-rtr-p-02,  
+network device/Aggregate: dc-vmx-1,  
 generate: generate alert,  
 For metric: interface_in_unicast_packets,  
 When: Average,  
@@ -926,12 +926,15 @@ notification: custom service,
 services: appformix_to_saltstack,  
 save.
 
-## Watch webhook notifications and ZMQ messages  
+## Verify the salt master receives webhook motifications from Appformix
 
 Run this command on the master to see webhook notifications:
 ```
 # tcpdump port 5001 -XX 
 ```
+
+## ZMQ messages  
+
 
 Salt provides a runner that displays events in real-time as they are received on the Salt master:  
 ```
@@ -940,13 +943,43 @@ Salt provides a runner that displays events in real-time as they are received on
 
 ## Trigger an alarm  to get a webhook notification sent by Appformix to SaltStack 
 
-Either you DIY, or, depending on the alarms you set, you can use one the automation content available in the directory [trigger_alarms](trigger_alarms):  
+Either you DIY, or, depending on the alarms you set, you can use one the automation content available in the repository.  
+Here's how to use the automation content available in the repository to trigger an alarm.   
 
-Add the file [generate_traffic.sls](trigger_alarms/generate_traffic.sls) to the directory ```junos``` of the repository ```organization/network_model``` (```gitfs_remotes```).  
+### generate traffic between 2 routers 
 
-And run this command on the master:   
+[generate_traffic.sls](states/generate_traffic.sls)  
+
 ```
-# salt "core-rtr-p-02" state.apply junos.generate_traffic
+# more network_model/generate_traffic.sls
+# salt "dc-vmx-1" state.apply generate_traffic
+```
+### Change interface speed on a router
+
+[change_int_speed.sls](states/change_int_speed.sls)  
+[speed.set](templates/speed.set)  
+
+```
+# more network_model/change_int_speed.sls
+# more network_model/speed.set   
+# salt "dc-vmx-1" state.apply change_int_speed
+# salt "dc-vmx-1" junos.cli "show system commit"
+# salt "dc-vmx-1" junos.cli "show configuration | compare rollback 1"
+# salt "dc-vmx-1" junos.cli "show configuration interfaces ge-0/0/1"
+```
+
+### Change MTU on a router
+
+[change_mtu.sls](states/change_mtu.sls)  
+[mtu.set](templates/mtu.set)  
+
+```
+# more network_model/change_mtu.sls
+# more network_model/mtu.set  
+# salt "dc-vmx-1" state.apply change_mtu
+# salt "dc-vmx-1" junos.cli "show system commit"
+# salt "dc-vmx-1" junos.cli "show configuration | compare rollback 1"
+# salt "dc-vmx-1" junos.cli "show configuration interfaces ge-0/0/1"
 ```
 
 ## Verify on the Junos device 
@@ -954,10 +987,6 @@ And run this command on the master:
 ssh to the junos device and run these commands: 
 ```
 show configuration | compare rollback 1
-```
-```
 show configuration protocols isis
-```
-```
 show system commit
 ```
