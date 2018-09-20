@@ -471,140 +471,395 @@ $ sudo -s
 # cd
 ```
 
+# SaltStack 
 
+## Install SaltStack 
 
+- Install master
+- Install minion 
+- Install requirements for SaltStack Junos proxy
 
-## SaltStack 
+### Install master
 
-### Install SaltStack 
-
-This is not covered by this documentation. 
-
-You need a  master and a minion.  
-
-The Salt Junos proxy has some requirements (```junos-eznc``` python library and other dependencies).  
-Install on the master or on a minion the dependencies to use a SaltStack proxy for Junos.  
-You need to install these dependencies on each node (master/minion) that will run a junos proxy daemon(s).  
-
-You need one junos proxy daemon per device.   
-Start one junos proxy daemon per device.  
-
-### Validate your SaltStack setup 
-
-Run this command on the master to verify: 
+Check if SaltStack master is already installed
 ```
-salt-key -L
-```
-
-Run this command to make sure the minion is up and responding to the master. This is not an ICMP ping.
-```
-salt -G 'roles:minion' test.ping
-```
-
-Select one the junos proxy and run these additionnal tests.  
-Example with the proxy ```core-rtr-p-02``` (it manages the network device ```core-rtr-p-02```)
-```
-salt core-rtr-p-02 test.ping
+$ sudo -s
 ```
 ```
-salt core-rtr-p-02 junos.cli "show version"
-```
-### Edit the SaltStack master configuration file 
-
-Edit the salt master configuration file:  
-```
-vi /etc/salt/master
-```
-Make sure the master configuration file has these details:  
-```
-runner_dirs:
-  - /srv/runners
+# salt --version
 ```
 ```
-engines:
-  - webhook:
-      port: 5001
+# salt-master --version
+```
+if SaltStack master was not already installed, then install it: 
+```
+$ sudo -s
 ```
 ```
-ext_pillar:
-  - git:
-    - master git@gitlab:organization/network_parameters.git
+# wget -O - https://repo.saltstack.com/apt/ubuntu/16.04/amd64/archive/2018.3.2/SALTSTACK-GPG-KEY.pub | sudo apt-key add -
+```
+Add ```deb http://repo.saltstack.com/apt/ubuntu/16.04/amd64/archive/2018.3.2 xenial main``` in the file ```/etc/apt/sources.list.d/saltstack.list```
+```
+# touch /etc/apt/sources.list.d/saltstack.list
 ```
 ```
-fileserver_backend:
-  - git
-  - roots
+# nano /etc/apt/sources.list.d/saltstack.list
 ```
 ```
-gitfs_remotes:
-  - ssh://git@gitlab/organization/network_model.git
+# more /etc/apt/sources.list.d/saltstack.list
+deb http://repo.saltstack.com/apt/ubuntu/16.04/amd64/archive/2018.3.2 xenial main
+```
+```
+# sudo apt-get update
+```
+```
+# sudo apt-get install salt-master
+```
+Verify you installed properly SaltStack master 
+```
+# salt --version
+salt 2018.3.2 (Oxygen)
+```
+```
+# salt-master --version
+salt-master 2018.3.2 (Oxygen)
 ```
 
-So: 
+### Install Minion
+
+Check if SaltStack minion is already installed
+```
+# salt-minion --version
+```
+if SaltStack minion was not already installed, then install it: 
+```
+$ sudo -s
+```
+```
+# wget -O - https://repo.saltstack.com/apt/ubuntu/16.04/amd64/archive/2018.3.2/SALTSTACK-GPG-KEY.pub | sudo apt-key add -
+```
+Add ```deb http://repo.saltstack.com/apt/ubuntu/16.04/amd64/archive/2018.3.2 xenial main``` in the file ```/etc/apt/sources.list.d/saltstack.list```
+```
+# touch /etc/apt/sources.list.d/saltstack.list
+```
+```
+# nano /etc/apt/sources.list.d/saltstack.list
+```
+```
+# more /etc/apt/sources.list.d/saltstack.list
+deb http://repo.saltstack.com/apt/ubuntu/16.04/amd64/archive/2018.3.2 xenial main
+```
+```
+# sudo apt-get update
+```
+```
+$ sudo apt-get install salt-minion
+```
+And verify if salt-minion was installed properly installation 
+```
+# salt-minion --version
+salt-minion 2018.3.2 (Oxygen)
+```
+
+### Install requirements for SaltStack Junos proxy 
+
+The Salt Junos proxy has some requirements (```junos-eznc``` python library and other dependencies). 
+
+```
+# apt-get install python-pip
+# pip list
+# apt-get --auto-remove --yes remove python-openssl
+# pip install pyOpenSSL junos-eznc jxmlease jsnapy
+# pip list | grep "pyOpenSSL\|junos-eznc\|jxmlease\|jsnapy"
+```
+
+## Configure SaltStack
+
+- Configure SaltStack master
+- Configure SaltStack minion 
+- Configure SaltStack pillars
+- Configure SaltStack proxy 
+- Configure SaltStack files server
+- Configure SaltStack webhook engine
+- Configure SaltStack reactor
+
+### Configure SaltStack master
+
+#### SaltStack master configuration file
+
+ssh to the Salt master and copy this [SaltStack master configuration file](master) in the file ```/etc/salt/master```  
+
+```
+cp automated_junos_show_commands_collection_with_appformix_saltstack/master /etc/salt/master
+more /etc/salt/master
+```
+So:
 - the Salt master is listening webhooks on port 5001. It generates equivalents ZMQ messages to the event bus
-- runners are in the directory ```/srv/runners``` on the Salt master
-- external pillars (variables) are in the gitlab repository ```organization/network_parameters``` (master branch)
-- Salt uses the gitlab repository ```organization/network_model``` as a remote file server.  
+- external pillars are in the gitlab repository ```organization/network_parameters```  (master branch)
+- Salt uses the gitlab repository ```organization/network_model``` as a remote files server.  
 
-### Create the junos automation content
-
-#### junos automation content in gitfs_remotes
-
-Add the file [isis.sls](isis.sls) to the directory ```junos``` of the gitlab repository ```organization/network_model``` (```gitfs_remotes```). 
-```
-salt://templates/junos/isis.set:
-  junos:
-    - install_config
-    - comment: "configured using SaltStack"
-```
-The file [isis.sls](isis.sls) uses the ```junos``` module ```install_config``` with the file ```templates/junos/isis.set```.   
-
-Add the file [isis.set](isis.set) to the directory ```templates/junos``` of the gitlab repository ```organization/network_model``` (```gitfs_remotes```).  
-```
-set protocols isis {{ pillar["isis_details"] }}
-```
-
-#### junos automation content in ext_pillar
-
-Here's an example for the ```top.sls``` file at the root of the gitlab repository ```organization/network_parameters``` (```ext_pillar```):  
-```
-{% set id = salt['grains.get']('id') %} 
-{% set host = salt['grains.get']('host') %} 
-
-base:
-  '*':
-    - production
-   
-{% if host == '' %}
-  '{{ id }}':
-    - {{ id }}
-{% endif %}
-```
-
-Update the file ```production.sls``` in the repository ```organization/network_parameters``` (```ext_pillar```) to define the pillar ```isis_details```  
-```
-isis_details: overload
-```
-
-### Test your automation content manually
-
-Test your automation content manually from the master. 
-Example with the proxy ```core-rtr-p-02``` (it manages the network device ```core-rtr-p-02```) 
+#### Restart the salt-master service
 
 ```
-salt core-rtr-p-02 state.apply junos.isis
+# service salt-master restart
+```
+#### Verify the salt-master status
+
+To see the Salt processes: 
+```
+# ps -ef | grep salt
+```
+To check the status, you can run these commands: 
+```
+# systemctl status salt-master.service
+```
+```
+# service salt-master status
+```
+#### SaltStack master log
+
+```
+# more /var/log/salt/master 
+```
+```
+# tail -f /var/log/salt/master
 ```
 
-Verify on the junos device itself. ssh to the network device ```core-rtr-p-02``` and run these commands: 
+### Configure SaltStack minion 
+
+
+#### SaltStack minion configuration file
+
+Copy the [minion configuration file](minion) in the file ```/etc/salt/minion```
+
+```
+cp automated_junos_show_commands_collection_with_appformix_saltstack/minion /etc/salt/minion
+more /etc/salt/minion
+```
+
+#### Restart the salt-minion service
+
+
+```
+# service salt-minion restart
+```
+
+#### Verify the salt-minion status
+
+To see the Salt processes: 
+```
+# ps -ef | grep salt
+```
+To check the status: 
+```
+# systemctl status salt-minion.service
+```
+```
+# service salt-minion status
+```
+
+#### Verify the keys 
+
+You need to accept the minions/proxies public keys on the master.   
+
+
+To list all public keys:
+```
+# salt-key -L
+```
+To accept a specified public key:
+```
+# salt-key -a saltstack_minion_id -y
+```
+Or, to accept all pending keys:
+```
+# salt-key -A -y
+```
+
+#### Verify master <-> minion communication 
+
+Run this command to make sure the minion is up and responding to the master. This is not an ICMP ping. 
+```
+# salt saltstack_minion_id test.ping
+```
+Run this additionnal test  
+```
+# salt "saltstack_minion_id" cmd.run "pwd"
+```
+
+
+### Configure SaltStack pillars
+
+Pillars are variables     
+They are defined in sls files, with a yaml data structure.  
+There is a ```top``` file.  
+The ```top.sls``` file map minions to sls (pillars) files.  
+
+#### Pillar configuration
+
+Refer to the [master configuration file](master) to know the location for pillars. 
+```
+more /etc/salt/master
+``` 
+So it is the repository ```network_parameters```  
+Run these commands to add the [pillars](pillars) at the root of the repository ```network_parameters```: 
+
+```
+# cp automated_junos_show_commands_collection_with_appformix_saltstack/pillars/* network_parameters/
+# ls network_parameters/
+# cd network_parameters
+# git status
+# git add .
+# git status
+# git commit -m "add pillars"
+# git push origin master
+# cd
+```
+
+
+#### Pillars configuration verification
+
+```
+$ sudo -s
+```
+```
+# salt-run pillar.show_pillar
+```
+```
+# salt-run pillar.show_pillar dc-vmx-1
+```
+
+### Configure SaltStack proxy 
+
+#### SaltStack proxy configuration file
+
+Copy the [proxy configuration file](proxy) in the file ```/etc/salt/proxy```  
+
+```
+# cp automated_junos_show_commands_collection_with_appformix_saltstack/proxy /etc/salt/proxy
+# more /etc/salt/proxy
+```
+
+
+#### Start SaltStack proxy 
+
+You need one salt proxy process per Junos device.  
+
+to start the proxy as a daemon for the device ```dc-vmx-1```, run this command
+```
+# sudo salt-proxy -d --proxyid=dc-vmx-1
+```
+The proxy daemon ```dc-vmx-1``` manages the network device ```dc-vmx-1```.  
+
+you can run this command to start it with a debug log level: 
+```
+# sudo salt-proxy -l debug --proxyid=dc-vmx-1
+```
+
+To see the SaltStack processes, run this command: 
+```
+# ps -ef | grep salt
+```
+
+#### Verify the keys
+
+You need to accept the minions/proxies public keys on the master.   
+
+
+To list all public keys:
+```
+# salt-key -L
+```
+To accept a specified public key:
+```
+# salt-key -a dc-vmx-1 -y
+```
+Or, to accept all pending keys:
+```
+# salt-key -A -y
+```
+#### Verify master <-> proxy communication
+
+Run this command to make sure a proxy is up and responding to the master. This is not an ICMP ping. 
+```
+# salt 'dc-vmx-1' test.ping
+```
+Run this additionnal test. It is an execution module. The master asks to the proxy ```dc-vmx-1``` to use an execution module
+```
+# salt 'dc-vmx-1' junos.cli "show version"
+```
+
+
+### Configure SaltStack files server
+
+Salt runs a files server to deliver files to minions and proxies.  
+The [master configuration file](master) indicates the location for the files server.  
+We are using an external files server (gitlab repository ```organization/network_model```)
+
+
+#### templates for Junos
+
+Run these commands to copy these [Junos templates](templates) at the root of the repository ```network_model```.
+
+```
+# cp automated_junos_show_commands_collection_with_appformix_saltstack/templates/* network_model/
+# cd network_model/
+# git add .
+# git commit -m "add junos templates"
+# git push origin master
+# cd
+```
+
+
+ 
+#### SaltStack state files
+
+Salt establishes a client-server model to bring infrastructure components in line with a given policy (salt state modules, in salt state sls files. kind of Ansible playbooks).
+
+run these commands to copy [these states files](states) at the root of the repository ```network_model```
+
+```
+# cp automated_junos_show_commands_collection_with_appformix_saltstack/states/* network_model/
+# cd network_model/
+# git add *
+# git commit -m "add states files"
+# git push origin master
+# cd
+```
+
+
+
+
+### Test your automation content manually from the master
+
+Example with the proxy ```dc-vmx-1``` (it manages the network device ```dc-vmx-1```).   
+Run this command on the master to ask to the proxy ```dc-vmx-1``` to execute the state file [isis.sls](states/isis.sls).  
+```
+salt dc-vmx-1 state.apply isis
+```
+
+Verify on the junos device itself.  
+ssh to the network device ```dc-vmx-1``` and run these commands: 
 ```
 show configuration | compare rollback 1
-```
-```
 show configuration protocols isis
-```
-```
 show system commit
 ```
+
+### Configure SaltStack webhook engine
+
+Engines are executed in a separate process that is monitored by Salt. If a Salt engine stops, it is restarted automatically.  
+Engines can run on both master and minion.  To start an engine, you need to specify engine information in master/minion config file depending on where you want to run the engine. Once the engine configuration is added, start the master and minion normally. The engine should start along with the salt master/minion.   
+webhook engine listens to webhook, and generates and pusblishes messages on SaltStack 0MQ bus.  
+
+We already added the webhook engine configuration in the [master configuration file](master)  
+So Appformix should his webhook notifications to the master ip address on port 5001. 
+
+```
+# more /etc/salt/master
+```
+
+
 
 ###  Update the Salt reactor
 
