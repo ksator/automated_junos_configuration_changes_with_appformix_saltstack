@@ -859,51 +859,42 @@ So Appformix should his webhook notifications to the master ip address on port 5
 # more /etc/salt/master
 ```
 
+### Configure SaltStack reactor
 
+#### Configure reactor configuration file
 
-###  Update the Salt reactor
-
-Update the Salt reactor file  
 The reactor binds sls files to event tags. The reactor has a list of event tags to be matched, and each event tag has a list of reactor SLS files to be run. So these sls files define the SaltStack reactions.  
-Update the reactor.  
-This reactor binds ```salt/engines/hook/appformix_to_saltstack``` to ```/srv/reactor/enforce_isis.sls``` 
+
+To map some events to reactor sls files, copy the [reactor configuration file](reactor.conf) to ```/etc/salt/master.d/reactor.conf```  
 
 ```
+# cp automated_junos_show_commands_collection_with_appformix_saltstack/reactor.conf /etc/salt/master.d/
 # more /etc/salt/master.d/reactor.conf
-reactor:
-   - 'salt/engines/hook/appformix_to_saltstack':
-       - /srv/reactor/enforce_isis.sls
+```
+This reactor binds webhook from Appformix to to ```/srv/reactor/enforce_isis.sls``` 
 
+#### Restart the salt master service
 ```
-
-Restart the Salt master:
+# service salt-master restart
 ```
-service salt-master stop
-service salt-master start
+#### Verify the reactor operationnal state: 
 ```
-
-The command ```salt-run reactor.list``` lists currently configured reactors:  
+# salt-run reactor.list
 ```
-salt-run reactor.list
+#### Add your reactor sls files
+create a ```/srv/reactor/``` directory    
 ```
-
-Create the sls reactor file ```/srv/reactor/enforce_isis.sls```.  
-It parses the data from the ZMQ message that has the tags ```salt/engines/hook/appformix_to_saltstack``` and extracts the network device name.  
-It then ask to the Junos proxy minion that manages the "faulty" device to apply the ```junos/isis.sls``` file.  
-the ```junos/isis.sls``` file executed by the Junos proxy minion will change the "faulty" device configuration.  
-
+# mkdir /srv/reactor/
 ```
+and copy these sls reactor files [reactor](reactor) to the directory ```/srv/reactor/```
+```
+# cp automated_junos_show_commands_collection_with_appformix_saltstack/reactor/* /srv/reactor/
+# ls /srv/reactor/
 # more /srv/reactor/enforce_isis.sls
-{% set body_json = data['body']|load_json %}
-{% set devicename = body_json['status']['entityId'] %}
-
-enforce_isis_overload:
-  local.state.apply:
-    - tgt: "{{ devicename }}"
-    - arg:
-      - junos.isis
-
 ```
+The reactor file [enforce_isis.sls](reactor/enforce_isis.sls) parses the data from the ZMQ message that has the tags ```salt/engines/hook/appformix_to_saltstack``` and extracts the network device name.  
+It then asks to the Junos proxy minion that manages the "faulty" device to apply the state file [isis.sls](states/isis.sls).  
+the state file [isis.sls](states/isis.sls) executed by a Junos proxy will change the device configuration using the template [isis.set](templates/isis.set) and a variable defined in [production.sls](pillars/production.sls) 
 
 # Run the demo: 
 
