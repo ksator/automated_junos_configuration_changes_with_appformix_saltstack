@@ -78,13 +78,12 @@ SaltStack automatically configure the "faulty" JUNOS device.
 - Install SaltStack
 - Configure SaltStack
 
+# Appformix  
 
-## Appformix  
-
-### Install Appformix. 
+## Install Appformix. 
 This is not covered by this documentation.  
 
-### Configure Appformix for network devices monitoring 
+## Configure Appformix for network devices monitoring 
 
 Appformix supports network devices monitoring using SNMP and JTI (Juniper Telemetry Interface) native streaming telemetry.  
 - For SNMP, the polling interval is 60s.  
@@ -134,10 +133,12 @@ Then, from your appformix directory, re-run the 'Appformix installation Ansible 
 cd appformix-2.15.2/
 ansible-playbook -i inventory appformix_standalone.yml
 ```
-### Configure the network devices with the SNMP community used by Appformix
+## Configure the network devices with the SNMP community used by Appformix
 
 You need to configure the network devices with the SNMP community used by Appformix. The script [**snmp.py**](configure_junos/snmp.py) renders the template [**snmp.j2**](configure_junos/snmp.j2) using the variables [**network_devices.yml**](configure_appformix/network_devices.yml). The rendered file is [**snmp.conf**](configure_junos/snmp.conf). This file is then loaded and committed on all network devices used with SNMP monitoring.
  
+Requirement: This script uses the junos-eznc python library so you need first to install it.  
+
 ```
 python configure_junos/snmp.py
 configured device 172.30.52.85 with snmp community public
@@ -147,7 +148,7 @@ configured device 172.30.52.86 with snmp community public
 more configure_junos/snmp.conf
 ```
 
-### Configure the network devices for JTI telemetry
+## Configure the network devices for JTI telemetry
 
 For JTI native streaming telemetry, Appformix uses NETCONF to automatically configure the network devices:  
 ```
@@ -202,6 +203,8 @@ The python script [**telemetry.py**](configure_junos/telemetry.py) renders the t
 ```
 more configure_appformix/network_devices.yml
 ```
+Requirement: This script uses the junos-eznc python library so you need first to install it.  
+
 ```
 python configure_junos/telemetry.py
 configured device 172.30.52.155 with telemetry server ip 192.168.1.100
@@ -259,6 +262,8 @@ Sensor Information :
         Forwarding-class                    : 255
 
 ```
+
+
 
 ## Gitlab
 
