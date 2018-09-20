@@ -263,19 +263,89 @@ Sensor Information :
 
 ```
 
+# Docker 
 
 
-## Gitlab
+Check if Docker is already installed
+```
+$ docker --version
+```
+
+If it was not already installed, install it:
+```
+$ sudo apt-get update
+```
+```
+$ sudo apt-get install \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    software-properties-common
+```
+```
+$ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+```
+```
+$ sudo add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"
+```
+```
+$ sudo apt-get update
+```
+```
+$ sudo apt-get install docker-ce
+```
+```
+$ sudo docker run hello-world
+```
+```
+$ sudo groupadd docker
+```
+```
+$ sudo usermod -aG docker $USER
+```
+
+Exit the ssh session and open an new ssh session and run these commands to verify you installed Docker properly:  
+```
+$ docker run hello-world
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+    (amd64)
+ 3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+
+To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash
+
+Share images, automate workflows, and more with a free Docker ID:
+ https://hub.docker.com/
+
+For more examples and ideas, visit:
+ https://docs.docker.com/engine/userguide/
+```
+```
+$ docker --version
+Docker version 18.03.1-ce, build 9ee9f40
+```
+
+# Gitlab
 
 This SaltStack setup uses a gitlab server for external pillars and as a remote file server.  
 
-### Install Gitlab
+## Instanciate a Gitlab docker container
+
 
 There is a Gitlab docker image available https://hub.docker.com/r/gitlab/gitlab-ce/
 
-You first need to install docker. This step is not covered by this documentation.  
-
-Then:  
 
 Pull the image: 
 ```
@@ -291,7 +361,7 @@ gitlab/gitlab-ce             latest              09b815498cc6        6 months ag
 
 Instanciate a container: 
 ```
-docker run -d --rm --name gitlab -p 9080:80 gitlab/gitlab-ce
+docker run -d --rm --name gitlab -p 3022:22 -p 9080:80 gitlab/gitlab-ce
 ```
 Verify:
 ```
@@ -299,12 +369,110 @@ Verify:
 CONTAINER ID        IMAGE                        COMMAND                  CREATED             STATUS                PORTS                                                 NAMES
 9e8330425d9c        gitlab/gitlab-ce             "/assets/wrapper"        5 months ago        Up 5 days (healthy)   443/tcp, 0.0.0.0:3022->22/tcp, 0.0.0.0:9080->80/tcp   gitlab
 ```
-### Configure Gitlab
 
-Create the organization ```organization```.    
-Create the repositories ```network_parameters``` and ```network_model``` in the organization ```organization```.      
-The repository ```network_parameters``` is used for SaltStack external pillars.    
-The repository ```network_model``` is used as an external file server for SaltStack   
+Wait for Gitlab container status to be ```healthy```. It takes about 2 mns.   
+```
+$ watch -n 10 'docker ps'
+```
+
+Verify you can access to Gitlab GUI:  
+Access Gitlab GUI with a browser on port 9080.  
+http://gitlab_ip_address:9080  
+Gitlab user is ```root```    
+Create a password ```password```  
+Sign in with ```root``` and ```password```    
+
+## Configure Gitlab
+
+### Create repositories
+
+Create the group ```organization```.    
+
+Create in the group ```organization``` the repositories:
+   - ```network_parameters``` (Public, add Readme)
+   - ```network_model``` (Public, add Readme) 
+
+the repository ```network_parameters``` is used for SaltStack external pillars  
+the repository ```network_model``` is used as an external files server for SaltStack  
+
+### Add your public key to Gitlab
+
+The Ubuntu host will inteact with the Gitlab server. 
+
+#### Generate ssh keys
+```
+$ sudo -s
+```
+```
+# ssh-keygen -f /root/.ssh/id_rsa -t rsa -N ''
+```
+```
+# ls /root/.ssh/
+id_rsa  id_rsa.pub  
+```
+#### Add the public key to Gitlab  
+Copy the public key:
+```
+# more /root/.ssh/id_rsa.pub
+```
+Access Gitlab GUI, and add the public key to ```User Settings``` > ```SSH Keys```
+
+### Update your ssh configuration
+```
+$ sudo -s
+```
+```
+# touch /root/.ssh/config
+```
+```
+# ls /root/.ssh/
+config       id_rsa       id_rsa.pub  
+```
+```
+# vi /root/.ssh/config
+```
+```
+# more /root/.ssh/config
+Host gitlab_ip_address
+Port 3022
+Host *
+Port 22
+```
+
+### Configure your Git client
+
+```
+$ sudo -s
+# git config --global user.email "you@example.com"
+# git config --global user.name "Your Name"
+```
+
+### Verify you can use Git and Gitlab
+
+Clone all the repositories:
+```
+$ sudo -s
+# git clone git@gitlab_ip_address:organization/network_parameters.git
+# git clone git@gitlab_ip_address:organization/network_model.git
+# ls
+# cd network_parameters
+# git remote -v
+# git branch 
+# ls
+# vi README.md
+# git status
+# git diff README.md
+# git add README.md
+# git status
+# git commit -m 'first commit'
+# git log --oneline
+# git log
+# git push origin master
+# cd
+```
+
+
+
 
 ## SaltStack 
 
