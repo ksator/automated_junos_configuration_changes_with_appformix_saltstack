@@ -590,7 +590,7 @@ The Salt Junos proxy has some requirements (```junos-eznc``` python library and 
 ssh to the Salt master and copy this [SaltStack master configuration file](master) in the file ```/etc/salt/master```  
 
 ```
-cp automated_junos_show_commands_collection_with_appformix_saltstack/master /etc/salt/master
+cp automated_junos_configuration_changes_with_appformix_saltstack/master /etc/salt/master
 more /etc/salt/master
 ```
 So:
@@ -633,7 +633,7 @@ To check the status, you can run these commands:
 Copy the [minion configuration file](minion) in the file ```/etc/salt/minion```
 
 ```
-cp automated_junos_show_commands_collection_with_appformix_saltstack/minion /etc/salt/minion
+cp automated_junos_configuration_changes_with_appformix_saltstack/minion /etc/salt/minion
 more /etc/salt/minion
 ```
 
@@ -705,7 +705,7 @@ So it is the repository ```network_parameters```
 Run these commands to add the [pillars](pillars) at the root of the repository ```network_parameters```: 
 
 ```
-# cp automated_junos_show_commands_collection_with_appformix_saltstack/pillars/* network_parameters/
+# cp automated_junos_configuration_changes_with_appformix_saltstack/pillars/* network_parameters/
 # ls network_parameters/
 # cd network_parameters
 # git status
@@ -736,7 +736,7 @@ $ sudo -s
 Copy the [proxy configuration file](proxy) in the file ```/etc/salt/proxy```  
 
 ```
-# cp automated_junos_show_commands_collection_with_appformix_saltstack/proxy /etc/salt/proxy
+# cp automated_junos_configuration_changes_with_appformix_saltstack/proxy /etc/salt/proxy
 # more /etc/salt/proxy
 ```
 
@@ -802,7 +802,7 @@ We are using an external files server (gitlab repository ```organization/network
 Run these commands to copy these [Junos templates](templates) at the root of the repository ```network_model```.
 
 ```
-# cp automated_junos_show_commands_collection_with_appformix_saltstack/templates/* network_model/
+# cp automated_junos_configuration_changes_with_appformix_saltstack/templates/* network_model/
 # cd network_model/
 # git add .
 # git commit -m "add junos templates"
@@ -819,7 +819,7 @@ Salt establishes a client-server model to bring infrastructure components in lin
 run these commands to copy [these states files](states) at the root of the repository ```network_model```
 
 ```
-# cp automated_junos_show_commands_collection_with_appformix_saltstack/states/* network_model/
+# cp automated_junos_configuration_changes_with_appformix_saltstack/states/* network_model/
 # cd network_model/
 # git add *
 # git commit -m "add states files"
@@ -868,7 +868,7 @@ The reactor binds sls files to event tags. The reactor has a list of event tags 
 To map some events to reactor sls files, copy the [reactor configuration file](reactor.conf) to ```/etc/salt/master.d/reactor.conf```  
 
 ```
-# cp automated_junos_show_commands_collection_with_appformix_saltstack/reactor.conf /etc/salt/master.d/
+# cp automated_junos_configuration_changes_with_appformix_saltstack/reactor.conf /etc/salt/master.d/
 # more /etc/salt/master.d/reactor.conf
 ```
 This reactor binds webhook from Appformix to to ```/srv/reactor/enforce_isis.sls``` 
@@ -888,7 +888,7 @@ create a ```/srv/reactor/``` directory
 ```
 and copy these sls reactor files [reactor](reactor) to the directory ```/srv/reactor/```
 ```
-# cp automated_junos_show_commands_collection_with_appformix_saltstack/reactor/* /srv/reactor/
+# cp automated_junos_configuration_changes_with_appformix_saltstack/reactor/* /srv/reactor/
 # ls /srv/reactor/
 # more /srv/reactor/enforce_isis.sls
 ```
