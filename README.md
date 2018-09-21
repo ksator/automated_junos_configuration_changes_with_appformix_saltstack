@@ -6,7 +6,6 @@
 [Docker](#docker)  
 [Gitlab](#gitlab-1)  
 [SaltStack](#saltstack-1)  
-[Familiarize yourself with this setup](#familiarize-yourself-with-this-setup)  
 [Run the demo](#run-the-demo)  
 
 # About the demo 
