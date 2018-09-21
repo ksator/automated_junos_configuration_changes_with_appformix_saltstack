@@ -986,7 +986,6 @@ Here's how to use the automation content available in the repository to trigger 
 
 ssh to the junos device and run these commands: 
 ```
-show configuration | compare rollback 1
 show configuration protocols isis
 show system commit
 ```
